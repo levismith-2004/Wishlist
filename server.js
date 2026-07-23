@@ -9,7 +9,8 @@ const HAS_PUBLIC = fs.existsSync(path.join(ROOT, 'public', 'index.html'));
 const PUBLIC = HAS_PUBLIC ? path.join(ROOT, 'public') : ROOT;
 // When the files sit flat in one folder, don't serve the server's own files
 const HIDDEN = HAS_PUBLIC ? new Set() : new Set(['server.js', 'package.json', 'package-lock.json', 'readme.md', '.gitignore', '.env']);
-const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
+const VOLUME = process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
+const DATA_DIR = process.env.DATA_DIR || VOLUME || path.join(ROOT, 'data');
 const FILE = path.join(DATA_DIR, 'list.json');
 const PORT = process.env.PORT || 3000;
 const PASSCODE = process.env.PASSCODE || '';
@@ -17,6 +18,14 @@ const TOKEN = PASSCODE ? crypto.createHash('sha256').update(PASSCODE).digest('he
 
 /* ── state ─────────────────────────────────────────────── */
 fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!VOLUME) {
+  console.warn('⚠  NO VOLUME ATTACHED — saving to ' + FILE + ', which is erased on every redeploy.');
+  console.warn('⚠  Attach a volume to this service to keep the list.');
+} else if (!DATA_DIR.startsWith(VOLUME)) {
+  console.warn(`⚠  Volume is mounted at ${VOLUME} but DATA_DIR is ${DATA_DIR} — the list is being saved OUTSIDE the volume and will be erased on redeploy.`);
+} else {
+  console.log(`✓ Volume mounted at ${VOLUME} — the list persists across deploys.`);
+}
 let state = { rev: 0, names: { a: 'Me', b: 'You' }, items: [] };
 try {
   state = { ...state, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) };
