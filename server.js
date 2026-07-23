@@ -63,7 +63,17 @@ function clean(raw = {}) {
     price: str(raw.price, 24),
     who: WHO.has(raw.who) ? raw.who : 'a',
     got: !!raw.got,
-    ts: Number(raw.ts) || Date.now()
+    group: str(raw.group, 60),
+    ts: Number(raw.ts) || Date.now(),
+    // Extra links for the same thing. Items saved before this existed get [].
+    options: (Array.isArray(raw.options) ? raw.options : [])
+      .slice(0, 20)
+      .filter(o => o && /^https?:\/\//i.test(o.url || ''))
+      .map(o => ({
+        id: str(o.id, 24) || crypto.randomUUID().slice(0, 12),
+        url: str(o.url, 2000),
+        price: str(o.price, 24)
+      }))
   };
 }
 
@@ -78,6 +88,9 @@ function apply(op) {
     if (i > -1) state.items[i] = clean({ ...state.items[i], ...op.patch, id: state.items[i].id });
   } else if (op.type === 'delete') {
     state.items = state.items.filter(x => x.id !== op.id);
+  } else if (op.type === 'regroup') {
+    const from = str(op.from, 60), to = str(op.to, 60);
+    state.items.forEach(i => { if (i.group === from) i.group = to; });
   } else if (op.type === 'names') {
     state.names = { a: str(op.names?.a, 12) || 'Me', b: str(op.names?.b, 12) || 'You' };
   } else {

@@ -117,12 +117,62 @@
   #undo button{font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;background:var(--ground);
     color:var(--ink);border:0;border-radius:100px;padding:6px 16px;cursor:pointer}
 
+  .opts{list-style:none;margin:10px 0 0;padding:0;border-top:1px dashed var(--rule)}
+  .opts li{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px dashed var(--rule)}
+  .opts li:last-child{border-bottom:0}
+  .ofav{width:15px;height:15px;border-radius:2px;flex:none;background:var(--ground)}
+  .opts a{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);
+    text-decoration:none;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+  .opts a:hover{color:var(--ink)}
+  .oprice{font-size:14px;font-weight:500;min-width:3ch;text-align:right;color:var(--ink)}
+  .oprice:focus{outline:none;background:rgba(31,79,216,.08);border-radius:2px}
+  .opts li button{background:0;border:0;font:inherit;font-size:12px;color:var(--muted);cursor:pointer;
+    padding:2px 4px;border-radius:3px;opacity:0;transition:.15s}
+  .opts li:hover button,.opts li:focus-within button{opacity:1}
+  .opts li button:hover{color:var(--b)}
+  .from{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .addopt{margin-top:9px;font:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);background:0;border:0;border-bottom:1px dashed var(--rule);padding:2px 0;cursor:pointer;
+    opacity:0;transition:.15s}
+  .tk:hover .addopt,.tk:focus-within .addopt{opacity:1}
+  .addopt:hover{color:var(--ink);border-bottom-color:var(--ink)}
+  .optin{margin-top:9px;width:100%;font:inherit;font-size:13.5px;padding:7px 9px;border:1.5px solid var(--ink);
+    border-radius:3px;background:#fff}
+  .optin:focus{outline:none;box-shadow:0 0 0 3px rgba(31,79,216,.18)}
+
+  .folder{margin-bottom:8px}
+  .fhead{display:flex;align-items:baseline;gap:11px;padding:0 0 8px;border-bottom:1.5px solid var(--ink);
+    margin:0 0 14px;cursor:pointer;user-select:none}
+  .fhead h2{font-family:var(--display);font-weight:400;font-size:25px;margin:0;line-height:1;letter-spacing:-.01em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .caret{font-size:10px;color:var(--muted);transition:transform .15s;line-height:1}
+  .folder.shut .caret{transform:rotate(-90deg)}
+  .folder.shut .fhead{margin-bottom:0;border-bottom-color:var(--rule)}
+  .fmeta{margin-left:auto;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .fhead button{background:0;border:0;font:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:3px;opacity:0;transition:.15s}
+  .fhead:hover button{opacity:1}
+  .fhead button:hover{color:var(--ink);background:var(--ground)}
+  .cardfoot{display:flex;align-items:center;gap:12px;margin-top:9px;flex-wrap:wrap}
+  .cardfoot .addopt{margin-top:0}
+  .grpsel{font:inherit;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);
+    background:transparent;border:0;border-bottom:1px dashed var(--rule);padding:2px 0;cursor:pointer;
+    max-width:150px;opacity:0;transition:.15s}
+  .tk:hover .grpsel,.tk:focus-within .grpsel,.grpsel:focus{opacity:1}
+  .grpsel:hover{color:var(--ink)}
+  .folder-in{font:inherit;font-size:12px;letter-spacing:.08em;background:transparent;border:0;
+    border-bottom:1.5px solid var(--rule);padding:5px 2px;width:150px;color:var(--ink)}
+  .folder-in:focus{outline:none;border-bottom-color:var(--ink)}
+  .folder-in::placeholder{color:var(--muted);text-transform:uppercase;letter-spacing:.14em;font-size:11px}
+
   :focus-visible{outline:2px solid var(--a);outline-offset:2px}
   @media (max-width:560px){
     body{padding:20px 14px 100px}
     .stub{width:58px}
     .tk::before,.tk::after{left:58px}
     .acts button{opacity:1}
+    .addopt,.opts li button{opacity:1}
+    .grpsel,.fhead button{opacity:1}
     #addBtn{width:100%;margin-left:0;padding:11px}
   }
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
@@ -153,6 +203,8 @@
       <button class="chip" data-who="a" aria-pressed="true"></button>
       <button class="chip" data-who="b" aria-pressed="false"></button>
       <button class="chip" data-who="both" aria-pressed="false">Both</button>
+      <input id="folderIn" class="folder-in" list="folderList" placeholder="Folder" autocomplete="off" aria-label="Folder">
+      <datalist id="folderList"></datalist>
       <button id="addBtn">Add to list</button>
     </div>
   </section>
@@ -164,7 +216,7 @@
     <span class="sync" id="sync"><span class="dot"></span><span id="syncText">Synced</span></span>
   </nav>
 
-  <main id="open" class="list"><div class="empty" id="boot">Loading the list…</div></main>
+  <main id="open"><div class="empty" id="boot">Loading the list…</div></main>
   <div id="gotWrap" hidden>
     <div class="section-label">Already sorted</div>
     <div id="got" class="list"></div>
@@ -177,7 +229,7 @@
 const $=s=>document.querySelector(s);
 let state={names:{a:'Me',b:'You'},items:[]};
 let rev=-1, filter='all', who='a', undoItem=null, undoT=null;
-let lastSig=null, seen=new Set();
+let lastSig=null, seen=new Set(), collapsed=new Set();
 
 /* ── server sync ─────────────────────────── */
 function editing(){ const e=document.activeElement; return e && (e.isContentEditable || e.matches('input')); }
@@ -231,10 +283,19 @@ function guessTitle(u){
 const initials=id=> id==='both'
   ? ((state.names.a[0]||'A')+(state.names.b[0]||'B')).toUpperCase()
   : ((state.names[id]||'?')[0]||'?').toUpperCase();
+
+// An item's original single link is treated as the first option, so nothing
+// needs migrating — items added before this feature just have one option.
+const opts=i=>(i.url?[{id:'_main',url:i.url,price:i.price||''}]:[]).concat(i.options||[]);
+const favUrl=h=>'https://www.google.com/s2/favicons?domain='+encodeURIComponent(h)+'&sz=64';
+const nums=i=>opts(i).map(o=>{const m=String(o.price||'').replace(/[, ]/g,'').match(/\d+(\.\d+)?/);return m?parseFloat(m[0]):null;}).filter(n=>n!==null);
+const fmt=n=>'$'+n.toLocaleString(undefined,{maximumFractionDigits:0});
+const lowest=i=>{const n=nums(i);return n.length?fmt(Math.min(...n)):'';};
+
 function money(items){
   let t=0,any=false;
-  items.forEach(i=>{const m=String(i.price||'').replace(/[, ]/g,'').match(/\d+(\.\d+)?/); if(m){t+=parseFloat(m[0]);any=true;}});
-  return any? '$'+t.toLocaleString(undefined,{maximumFractionDigits:0}) : null;
+  items.forEach(i=>{const n=nums(i); if(n.length){t+=Math.min(...n);any=true;}});
+  return any? fmt(t) : null;
 }
 
 /* ── add ─────────────────────────────────── */
@@ -246,7 +307,8 @@ function addFromInput(){
   $('#entry').value=''; $('#entry').focus();
 }
 function push(o){
-  const item={id:uid(),url:o.url||'',title:o.title||'Untitled',note:'',price:'',who,got:false,ts:Date.now()};
+  const item={id:uid(),url:o.url||'',title:o.title||'Untitled',note:'',price:'',who,got:false,
+    group:$('#folderIn').value.trim().slice(0,60),ts:Date.now()};
   state.items.unshift(item); render();          // optimistic
   op({type:'add',item});
 }
@@ -270,25 +332,45 @@ function render(){
   // Rebuild the cards only when something actually changed — otherwise the
   // optimistic render, the server's reply and the 4s poll each redraw the
   // same list and everything flickers.
-  const row=i=>[i.id,i.title,i.note,i.price,i.who,i.got,i.url].join('\u0001');
-  const sig=[filter,state.names.a,state.names.b,open.map(row).join('\u0002'),got.map(row).join('\u0002')].join('\u0003');
+  const row=i=>[i.id,i.title,i.note,i.price,i.who,i.got,i.url,i.group||'',JSON.stringify(i.options||[])].join('\u0001');
+  const sig=[filter,state.names.a,state.names.b,[...collapsed].sort().join('|'),
+    open.map(row).join('\u0002'),got.map(row).join('\u0002')].join('\u0003');
   if(sig===lastSig) return;
   lastSig=sig;
 
-  $('#open').innerHTML = open.length ? open.map(card).join('')
+  // Folders keep the order they first appear in; loose items sit underneath.
+  const folders=[];
+  open.forEach(i=>{ const g=i.group||''; if(g && !folders.includes(g)) folders.push(g); });
+  const loose=open.filter(i=>!i.group);
+
+  const html = folders.map(g=>{
+    const kids=open.filter(i=>i.group===g), shut=collapsed.has(g);
+    const cheapest=kids.map(k=>nums(k).length?Math.min(...nums(k)):null).filter(n=>n!==null);
+    const meta=[kids.length+(kids.length===1?' thing':' things'),
+      cheapest.length?'from '+fmt(Math.min(...cheapest)):''].filter(Boolean).join(' · ');
+    return `<section class="folder${shut?' shut':''}" data-group="${esc(g)}">
+      <div class="fhead" data-act="fold"><span class="caret">▼</span><h2>${esc(g)}</h2>
+        <button data-act="renameg">Rename</button><span class="fmeta">${meta}</span></div>
+      <div class="list">${kids.map(card).join('')}</div>
+    </section>`;
+  }).join('') + (loose.length?`<div class="list">${loose.map(card).join('')}</div>`:'');
+
+  $('#open').innerHTML = open.length ? html
     : `<div class="empty"><b>${state.items.length?'Nothing here yet':'Start the list'}</b>
        Paste a link up top — a shop page, an Etsy listing, anything. Or type an idea and add the details later.</div>`;
+  $('#folderList').innerHTML = allFolders().map(f=>`<option value="${esc(f)}">`).join('');
   $('#got').innerHTML = got.map(card).join('');
   $('#gotWrap').hidden = !got.length;
   state.items.forEach(i=>seen.add(i.id));
 }
+const allFolders=()=>[...new Set(state.items.map(i=>i.group).filter(Boolean))].sort();
 function stats(open,got){
   const sum=money(open);
   $('#stats').textContent=[open.length+(open.length===1?' thing':' things'),sum,got.length?got.length+' sorted':'']
     .filter(Boolean).join(' · ');
 }
 function card(i){
-  const h=host(i.url);
+  const O=opts(i), multi=O.length>1, h=O.length?host(O[0].url):'';
   return `<article class="tk${i.got?' got':''}${seen.has(i.id)?'':' fresh'}" data-id="${i.id}">
     <div class="stub">
       <button class="punch" data-act="got" title="${i.got?'Move back to the list':'Mark as sorted'}"></button>
@@ -296,16 +378,46 @@ function card(i){
     </div>
     <div class="body">
       <div class="top">
-        ${h?`<img class="fav" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(h)}&sz=64" alt="" onerror="this.remove()">`:''}
+        ${!multi&&h?`<img class="fav" src="${favUrl(h)}" alt="" onerror="this.remove()">`:''}
         <h3 class="title" contenteditable="plaintext-only" data-field="title">${esc(i.title)}</h3>
-        <span class="price" contenteditable="plaintext-only" data-field="price">${esc(i.price)||'—'}</span>
+        ${multi
+          ? `<span class="from">${lowest(i)?'from '+lowest(i):O.length+' options'}</span>`
+          : `<span class="price" contenteditable="plaintext-only" data-field="price">${esc(i.price)||'—'}</span>`}
       </div>
-      ${h?`<div class="meta"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(h)} ↗</a></div>`:''}
+      ${!multi&&h?`<div class="meta"><a href="${esc(O[0].url)}" target="_blank" rel="noopener">${esc(h)} ↗</a></div>`:''}
       <p class="note" contenteditable="plaintext-only" data-field="note" data-ph="Add a note — size, colour, why…">${esc(i.note)}</p>
+      ${multi?`<ul class="opts">${O.map(optRow).join('')}</ul>`:''}
+      <div class="cardfoot">
+        <button class="addopt" data-act="addopt">+ another option</button>
+        <select class="grpsel" aria-label="Folder">
+          <option value=""${i.group?'':' selected'}>No folder</option>
+          ${allFolders().map(f=>`<option value="${esc(f)}"${f===i.group?' selected':''}>${esc(f)}</option>`).join('')}
+          <option value="\u0000new">+ New folder…</option>
+        </select>
+      </div>
     </div>
     <div class="acts"><button data-act="del" title="Remove">✕</button></div>
     ${i.got?'<span class="got-mark">GOT IT</span>':''}
   </article>`;
+}
+function optRow(o){
+  const h=host(o.url);
+  return `<li data-oid="${esc(o.id)}">
+    <img class="ofav" src="${favUrl(h)}" alt="" onerror="this.remove()">
+    <a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(h)} ↗</a>
+    <span class="oprice" contenteditable="plaintext-only" data-ofield="price">${esc(o.price)||'—'}</span>
+    <button data-act="rmopt" title="Remove this option">✕</button>
+  </li>`;
+}
+function addOption(it,raw){
+  const u=normUrl(raw||''); if(!u){ lastSig=null; return render(); }
+  if(!it.url && !(it.options||[]).length){
+    it.url=u; op({type:'update',id:it.id,patch:{url:u}});
+  }else{
+    it.options=[...(it.options||[]),{id:uid(),url:u,price:''}];
+    op({type:'update',id:it.id,patch:{options:it.options}});
+  }
+  lastSig=null; render();
 }
 
 /* ── events ──────────────────────────────── */
@@ -320,10 +432,47 @@ document.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.
 
 document.addEventListener('click',e=>{
   const btn=e.target.closest('[data-act]'); if(!btn) return;
-  const id=btn.closest('.tk').dataset.id, it=state.items.find(x=>x.id===id); if(!it) return;
-  const act=btn.dataset.act;
+  const act0=btn.dataset.act;
+
+  // Folder header actions live outside any card, so handle them first.
+  if(act0==='fold'||act0==='renameg'){
+    const g=btn.closest('.folder').dataset.group;
+    if(act0==='renameg'){
+      const to=prompt('Rename this folder (leave blank to remove it and free the items):',g);
+      if(to===null) return;
+      const name=to.trim().slice(0,60);
+      state.items.forEach(i=>{ if(i.group===g) i.group=name; });
+      collapsed.delete(g);
+      lastSig=null; render(); op({type:'regroup',from:g,to:name});
+    }else{
+      collapsed.has(g)?collapsed.delete(g):collapsed.add(g);
+      render();
+    }
+    return;
+  }
+
+  const holder=btn.closest('.tk'); if(!holder) return;
+  const id=holder.dataset.id, it=state.items.find(x=>x.id===id); if(!it) return;
+  const act=act0;
   if(act==='got'){ it.got=!it.got; render(); op({type:'update',id,patch:{got:it.got}}); }
   if(act==='who'){ it.who={a:'b',b:'both',both:'a'}[it.who]; render(); op({type:'update',id,patch:{who:it.who}}); }
+  if(act==='addopt'){
+    const inp=document.createElement('input');
+    inp.className='optin'; inp.placeholder='Paste another link for this…';
+    btn.replaceWith(inp); inp.focus();
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){ e.preventDefault(); addOption(it,inp.value); }
+      if(e.key==='Escape'){ lastSig=null; render(); }
+    });
+    inp.addEventListener('blur',()=>{ if(!inp.value.trim()){ lastSig=null; render(); } });
+    return;
+  }
+  if(act==='rmopt'){
+    const oid=btn.closest('li').dataset.oid;
+    if(oid==='_main'){ it.url=''; it.price=''; op({type:'update',id,patch:{url:'',price:''}}); }
+    else{ it.options=(it.options||[]).filter(o=>o.id!==oid); op({type:'update',id,patch:{options:it.options}}); }
+    lastSig=null; render(); return;
+  }
   if(act==='del'){
     undoItem={item:{...it},idx:state.items.indexOf(it)};
     state.items=state.items.filter(x=>x.id!==id); render();
@@ -339,6 +488,21 @@ $('#undoBtn').onclick=()=>{
 };
 
 document.addEventListener('focusout',e=>{
+  const of=e.target.closest('[data-ofield]');
+  if(of){
+    const oid=of.closest('li').dataset.oid;
+    const it=state.items.find(x=>x.id===of.closest('.tk').dataset.id); if(!it) return;
+    let v=of.textContent.trim(); if(v==='—') v='';
+    if(oid==='_main'){
+      if(it.price!==v){ it.price=v; op({type:'update',id:it.id,patch:{price:v}}); }
+    }else{
+      const o=(it.options||[]).find(x=>x.id===oid);
+      if(o && o.price!==v){ o.price=v; op({type:'update',id:it.id,patch:{options:it.options}}); }
+    }
+    of.textContent=v||'—';
+    stats(state.items.filter(i=>!i.got),state.items.filter(i=>i.got));
+    return;
+  }
   const f=e.target.closest('[data-field]'); if(!f) return;
   const it=state.items.find(x=>x.id===f.closest('.tk').dataset.id); if(!it) return;
   const field=f.dataset.field;
@@ -352,8 +516,20 @@ document.addEventListener('focusout',e=>{
   stats(state.items.filter(i=>!i.got),state.items.filter(i=>i.got));
   op({type:'update',id:it.id,patch:{[field]:v}});
 });
+document.addEventListener('change',e=>{
+  const sel=e.target.closest('.grpsel'); if(!sel) return;
+  const it=state.items.find(x=>x.id===sel.closest('.tk').dataset.id); if(!it) return;
+  let g=sel.value;
+  if(g==='\u0000new'){
+    const name=prompt('Name the new folder:','');
+    if(name===null||!name.trim()){ lastSig=null; return render(); }
+    g=name.trim().slice(0,60);
+  }
+  it.group=g; lastSig=null; render(); op({type:'update',id:it.id,patch:{group:g}});
+});
+
 document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&e.target.matches('.title,.price')){e.preventDefault();e.target.blur();}
+  if(e.key==='Enter'&&e.target.matches('.title,.price,.oprice')){e.preventDefault();e.target.blur();}
   if(e.key==='Escape'&&e.target.isContentEditable) e.target.blur();
 });
 document.addEventListener('paste',e=>{
