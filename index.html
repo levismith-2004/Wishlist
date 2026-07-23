@@ -143,11 +143,8 @@
   .folder{margin-bottom:8px}
   .fhead{display:flex;align-items:baseline;gap:11px;padding:0 0 8px;border-bottom:1.5px solid var(--ink);
     margin:0 0 14px;cursor:pointer;user-select:none}
-  .fhead h2{font-family:var(--display);font-weight:400;font-size:25px;margin:0;line-height:1;letter-spacing:-.01em;
-    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .caret{font-size:10px;color:var(--muted);transition:transform .15s;line-height:1}
   .folder.shut .caret{transform:rotate(-90deg)}
-  .folder.shut .fhead{margin-bottom:0;border-bottom-color:var(--rule)}
   .fmeta{margin-left:auto;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
   .fhead button{background:0;border:0;font:inherit;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
     color:var(--muted);cursor:pointer;padding:2px 4px;border-radius:3px;opacity:0;transition:.15s}
@@ -164,6 +161,26 @@
     border-bottom:1.5px solid var(--rule);padding:5px 2px;width:150px;color:var(--ink)}
   .folder-in:focus{outline:none;border-bottom-color:var(--ink)}
   .folder-in::placeholder{color:var(--muted);text-transform:uppercase;letter-spacing:.14em;font-size:11px}
+
+  .folder.shut .list{display:none}
+  .folder.shut .fhead{margin-bottom:0;border-bottom-color:var(--rule)}
+  .fname{font-family:var(--display);font-weight:400;font-size:25px;margin:0;line-height:1;letter-spacing:-.01em}
+  .fname:focus{outline:none;background:rgba(31,79,216,.08);border-radius:2px}
+  .edge{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:4px 0 0 4px;background:var(--accent)}
+  .grip{background:0;border:0;color:var(--rule);cursor:grab;font-size:11px;line-height:1;padding:2px 4px;letter-spacing:-1px}
+  .grip:hover{color:var(--ink)}
+  .grip:active{cursor:grabbing}
+  .tk.dragging{opacity:.35}
+  .acts .mv{font-size:11px}
+  .colbtn{width:16px;height:16px;border-radius:50%;padding:0;cursor:pointer;
+    border:1.5px solid var(--rule);background:var(--accent,transparent);opacity:0;transition:.15s}
+  .tk:hover .colbtn,.tk:focus-within .colbtn{opacity:1}
+  .sw{width:17px;height:17px;border-radius:50%;padding:0;cursor:pointer;border:1.5px solid rgba(0,0,0,.12)}
+  .sw.none{background:transparent;border-style:dashed;border-color:var(--rule)}
+  .swatches{display:flex;gap:6px;align-items:center}
+  .newfolder{font:inherit;font-size:12px;padding:5px 8px;border:1.5px solid var(--ink);border-radius:3px;
+    background:#fff;width:150px}
+  .newfolder:focus{outline:none;box-shadow:0 0 0 3px rgba(31,79,216,.18)}
 
   :focus-visible{outline:2px solid var(--a);outline-offset:2px}
   @media (max-width:560px){
@@ -332,7 +349,7 @@ function render(){
   // Rebuild the cards only when something actually changed — otherwise the
   // optimistic render, the server's reply and the 4s poll each redraw the
   // same list and everything flickers.
-  const row=i=>[i.id,i.title,i.note,i.price,i.who,i.got,i.url,i.group||'',JSON.stringify(i.options||[])].join('\u0001');
+  const row=i=>[i.id,i.title,i.note,i.price,i.who,i.got,i.url,i.group||'',i.color||'',JSON.stringify(i.options||[])].join('\u0001');
   const sig=[filter,state.names.a,state.names.b,[...collapsed].sort().join('|'),
     open.map(row).join('\u0002'),got.map(row).join('\u0002')].join('\u0003');
   if(sig===lastSig) return;
@@ -349,11 +366,13 @@ function render(){
     const meta=[kids.length+(kids.length===1?' thing':' things'),
       cheapest.length?'from '+fmt(Math.min(...cheapest)):''].filter(Boolean).join(' · ');
     return `<section class="folder${shut?' shut':''}" data-group="${esc(g)}">
-      <div class="fhead" data-act="fold"><span class="caret">▼</span><h2>${esc(g)}</h2>
-        <button data-act="renameg">Rename</button><span class="fmeta">${meta}</span></div>
-      <div class="list">${kids.map(card).join('')}</div>
+      <div class="fhead"><span class="caret" data-act="fold">▼</span>
+        <h2 class="fname" contenteditable="plaintext-only" data-gfield="${esc(g)}">${esc(g)}</h2>
+        <button data-act="ungroup" title="Dissolve this folder, keep the items">Ungroup</button>
+        <span class="fmeta" data-act="fold">${meta}</span></div>
+      <div class="list" data-group="${esc(g)}">${kids.map(card).join('')}</div>
     </section>`;
-  }).join('') + (loose.length?`<div class="list">${loose.map(card).join('')}</div>`:'');
+  }).join('') + (loose.length?`<div class="list" data-group="">${loose.map(card).join('')}</div>`:'');
 
   $('#open').innerHTML = open.length ? html
     : `<div class="empty"><b>${state.items.length?'Nothing here yet':'Start the list'}</b>
@@ -371,8 +390,11 @@ function stats(open,got){
 }
 function card(i){
   const O=opts(i), multi=O.length>1, h=O.length?host(O[0].url):'';
-  return `<article class="tk${i.got?' got':''}${seen.has(i.id)?'':' fresh'}" data-id="${i.id}">
+  return `<article class="tk${i.got?' got':''}${seen.has(i.id)?'':' fresh'}" data-id="${i.id}"
+      ${i.color?`style="--accent:${esc(i.color)}"`:''}>
+    ${i.color?'<span class="edge"></span>':''}
     <div class="stub">
+      <button class="grip" data-act="grip" title="Drag to reorder">⣿</button>
       <button class="punch" data-act="got" title="${i.got?'Move back to the list':'Mark as sorted'}"></button>
       <button class="stamp" data-who="${i.who}" data-act="who" title="Switch who it's for">${esc(initials(i.who))}</button>
     </div>
@@ -388,6 +410,7 @@ function card(i){
       <p class="note" contenteditable="plaintext-only" data-field="note" data-ph="Add a note — size, colour, why…">${esc(i.note)}</p>
       ${multi?`<ul class="opts">${O.map(optRow).join('')}</ul>`:''}
       <div class="cardfoot">
+        <button class="colbtn" data-act="colour" title="Colour code"></button>
         <button class="addopt" data-act="addopt">+ another option</button>
         <select class="grpsel" aria-label="Folder">
           <option value=""${i.group?'':' selected'}>No folder</option>
@@ -396,7 +419,11 @@ function card(i){
         </select>
       </div>
     </div>
-    <div class="acts"><button data-act="del" title="Remove">✕</button></div>
+    <div class="acts">
+      <button class="mv" data-act="up" title="Move up">▲</button>
+      <button class="mv" data-act="down" title="Move down">▼</button>
+      <button data-act="del" title="Remove">✕</button>
+    </div>
     ${i.got?'<span class="got-mark">GOT IT</span>':''}
   </article>`;
 }
@@ -435,15 +462,12 @@ document.addEventListener('click',e=>{
   const act0=btn.dataset.act;
 
   // Folder header actions live outside any card, so handle them first.
-  if(act0==='fold'||act0==='renameg'){
+  if(act0==='fold'||act0==='ungroup'){
     const g=btn.closest('.folder').dataset.group;
-    if(act0==='renameg'){
-      const to=prompt('Rename this folder (leave blank to remove it and free the items):',g);
-      if(to===null) return;
-      const name=to.trim().slice(0,60);
-      state.items.forEach(i=>{ if(i.group===g) i.group=name; });
+    if(act0==='ungroup'){
+      state.items.forEach(i=>{ if(i.group===g) i.group=''; });
       collapsed.delete(g);
-      lastSig=null; render(); op({type:'regroup',from:g,to:name});
+      lastSig=null; render(); op({type:'regroup',from:g,to:''});
     }else{
       collapsed.has(g)?collapsed.delete(g):collapsed.add(g);
       render();
@@ -456,6 +480,28 @@ document.addEventListener('click',e=>{
   const act=act0;
   if(act==='got'){ it.got=!it.got; render(); op({type:'update',id,patch:{got:it.got}}); }
   if(act==='who'){ it.who={a:'b',b:'both',both:'a'}[it.who]; render(); op({type:'update',id,patch:{who:it.who}}); }
+  if(act==='up'||act==='down'){
+    const sibs=[...holder.parentNode.children].map(n=>n.dataset.id);
+    const k=sibs.indexOf(id), j=act==='up'?k-1:k+1;
+    if(j<0||j>=sibs.length) return;
+    [sibs[k],sibs[j]]=[sibs[j],sibs[k]];
+    applyOrder(sibs); lastSig=null; render();
+    op({type:'reorder',ids:state.items.map(x=>x.id)});
+    return;
+  }
+  if(act==='colour'){
+    const box=document.createElement('span');
+    box.className='swatches';
+    box.innerHTML=`<button class="sw none" data-col="" title="No colour"></button>`+
+      PALETTE.map(c=>`<button class="sw" data-col="${c}" style="background:${c}"></button>`).join('');
+    btn.replaceWith(box);
+    box.addEventListener('click',ev=>{
+      const s=ev.target.closest('.sw'); if(!s) return;
+      it.color=s.dataset.col; lastSig=null; render();
+      op({type:'update',id,patch:{color:it.color}});
+    });
+    return;
+  }
   if(act==='addopt'){
     const inp=document.createElement('input');
     inp.className='optin'; inp.placeholder='Paste another link for this…';
@@ -503,6 +549,16 @@ document.addEventListener('focusout',e=>{
     stats(state.items.filter(i=>!i.got),state.items.filter(i=>i.got));
     return;
   }
+  const gf=e.target.closest('[data-gfield]');
+  if(gf){
+    const from=gf.dataset.gfield, to=gf.textContent.trim().slice(0,60);
+    if(!to){ gf.textContent=from; return; }
+    if(to===from) return;
+    state.items.forEach(i=>{ if(i.group===from) i.group=to; });
+    if(collapsed.has(from)){ collapsed.delete(from); collapsed.add(to); }
+    lastSig=null; render(); op({type:'regroup',from,to});
+    return;
+  }
   const f=e.target.closest('[data-field]'); if(!f) return;
   const it=state.items.find(x=>x.id===f.closest('.tk').dataset.id); if(!it) return;
   const field=f.dataset.field;
@@ -516,19 +572,72 @@ document.addEventListener('focusout',e=>{
   stats(state.items.filter(i=>!i.got),state.items.filter(i=>i.got));
   op({type:'update',id:it.id,patch:{[field]:v}});
 });
+const PALETTE=['#C4552A','#C98A05','#17795E','#0E7490','#6D3FD1','#4A5568'];
+
+// Rearranges the visible items among the slots they already occupy, so a
+// reorder while a filter is on can't scramble the items you can't see.
+function applyOrder(ids){
+  const slots=[]; state.items.forEach((it,k)=>{ if(ids.includes(it.id)) slots.push(k); });
+  const byId=new Map(state.items.map(i=>[i.id,i]));
+  slots.forEach((k,n)=>{ const it=byId.get(ids[n]); if(it) state.items[k]=it; });
+}
+
+/* ── drag to reorder ─────────────────────── */
+let dragging=null;
+document.addEventListener('pointerdown',e=>{
+  const g=e.target.closest('.grip'); if(g) g.closest('.tk').draggable=true;
+});
+document.addEventListener('dragstart',e=>{
+  const tk=e.target.closest('.tk');
+  if(!tk||!tk.draggable){ e.preventDefault(); return; }
+  dragging=tk; tk.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move';
+  e.dataTransfer.setData('text/plain',tk.dataset.id);
+});
+document.addEventListener('dragover',e=>{
+  if(!dragging) return;
+  const list=e.target.closest('.list'); if(!list) return;
+  e.preventDefault();
+  const over=e.target.closest('.tk');
+  if(!over||over===dragging){ if(!list.contains(dragging)) list.appendChild(dragging); return; }
+  const r=over.getBoundingClientRect();
+  over.parentNode.insertBefore(dragging,(e.clientY-r.top)/r.height>0.5?over.nextSibling:over);
+});
+document.addEventListener('dragend',()=>{
+  if(!dragging) return;
+  const tk=dragging; dragging=null;
+  tk.classList.remove('dragging'); tk.draggable=false;
+  const it=state.items.find(x=>x.id===tk.dataset.id);
+  const landed=tk.parentNode&&tk.parentNode.dataset?tk.parentNode.dataset.group||'':'';
+  if(it&&it.group!==landed){ it.group=landed; op({type:'update',id:it.id,patch:{group:landed}}); }
+  applyOrder([...document.querySelectorAll('#open .tk')].map(n=>n.dataset.id));
+  lastSig=null; render(); op({type:'reorder',ids:state.items.map(x=>x.id)});
+});
+
 document.addEventListener('change',e=>{
   const sel=e.target.closest('.grpsel'); if(!sel) return;
-  const it=state.items.find(x=>x.id===sel.closest('.tk').dataset.id); if(!it) return;
-  let g=sel.value;
-  if(g==='\u0000new'){
-    const name=prompt('Name the new folder:','');
-    if(name===null||!name.trim()){ lastSig=null; return render(); }
-    g=name.trim().slice(0,60);
+  const tk=sel.closest('.tk'), it=state.items.find(x=>x.id===tk.dataset.id); if(!it) return;
+  if(sel.value==='\u0000new'){
+    const inp=document.createElement('input');
+    inp.className='newfolder'; inp.placeholder='Name the folder…';
+    sel.replaceWith(inp); inp.focus();
+    const commit=()=>{
+      const g=inp.value.trim().slice(0,60);
+      if(!g){ lastSig=null; return render(); }
+      it.group=g; lastSig=null; render(); op({type:'update',id:it.id,patch:{group:g}});
+    };
+    inp.addEventListener('keydown',ev=>{
+      if(ev.key==='Enter'){ ev.preventDefault(); commit(); }
+      if(ev.key==='Escape'){ lastSig=null; render(); }
+    });
+    inp.addEventListener('blur',commit);
+    return;
   }
-  it.group=g; lastSig=null; render(); op({type:'update',id:it.id,patch:{group:g}});
+  it.group=sel.value; lastSig=null; render(); op({type:'update',id:it.id,patch:{group:sel.value}});
 });
 
 document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.matches('.fname')){e.preventDefault();e.target.blur();}
   if(e.key==='Enter'&&e.target.matches('.title,.price,.oprice')){e.preventDefault();e.target.blur();}
   if(e.key==='Escape'&&e.target.isContentEditable) e.target.blur();
 });

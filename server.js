@@ -64,6 +64,7 @@ function clean(raw = {}) {
     who: WHO.has(raw.who) ? raw.who : 'a',
     got: !!raw.got,
     group: str(raw.group, 60),
+    color: /^#[0-9a-f]{6}$/i.test(raw.color || '') ? str(raw.color, 7) : '',
     ts: Number(raw.ts) || Date.now(),
     // Extra links for the same thing. Items saved before this existed get [].
     options: (Array.isArray(raw.options) ? raw.options : [])
@@ -88,6 +89,13 @@ function apply(op) {
     if (i > -1) state.items[i] = clean({ ...state.items[i], ...op.patch, id: state.items[i].id });
   } else if (op.type === 'delete') {
     state.items = state.items.filter(x => x.id !== op.id);
+  } else if (op.type === 'reorder') {
+    const ids = Array.isArray(op.ids) ? op.ids.map(x => str(x, 24)) : [];
+    const left = new Map(state.items.map(i => [i.id, i]));
+    const next = [];
+    ids.forEach(id => { const it = left.get(id); if (it) { next.push(it); left.delete(id); } });
+    left.forEach(it => next.push(it));   // anything the client didn't mention keeps its place at the end
+    state.items = next;
   } else if (op.type === 'regroup') {
     const from = str(op.from, 60), to = str(op.to, 60);
     state.items.forEach(i => { if (i.group === from) i.group = to; });
