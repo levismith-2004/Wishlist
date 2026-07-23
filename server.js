@@ -5,7 +5,10 @@ import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
-const PUBLIC = path.join(ROOT, 'public');
+const HAS_PUBLIC = fs.existsSync(path.join(ROOT, 'public', 'index.html'));
+const PUBLIC = HAS_PUBLIC ? path.join(ROOT, 'public') : ROOT;
+// When the files sit flat in one folder, don't serve the server's own files
+const HIDDEN = HAS_PUBLIC ? new Set() : new Set(['server.js', 'package.json', 'package-lock.json', 'readme.md', '.gitignore', '.env']);
 const DATA_DIR = process.env.DATA_DIR || path.join(ROOT, 'data');
 const FILE = path.join(DATA_DIR, 'list.json');
 const PORT = process.env.PORT || 3000;
@@ -146,6 +149,7 @@ http.createServer(async (req, res) => {
     const rel = p === '/' ? 'index.html' : p.replace(/^\/+/, '');
     const file = path.join(PUBLIC, rel);
     if (!file.startsWith(PUBLIC)) return send(res, 403, 'text/plain', 'Nope');
+    if (HIDDEN.has(path.basename(file).toLowerCase())) return send(res, 404, 'text/plain', 'Not found');
     fs.readFile(file, (err, data) => {
       if (err) return send(res, 404, 'text/plain', 'Not found');
       send(res, 200, TYPES[path.extname(file)] || 'application/octet-stream', data);
