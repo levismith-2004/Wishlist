@@ -61,8 +61,8 @@
   .sync.off .dot{background:var(--b)}
 
   .list{display:flex;flex-direction:column;gap:14px}
-  .tk{position:relative;display:flex;background:var(--card);border-radius:4px;box-shadow:var(--shadow);
-    animation:rise .35s cubic-bezier(.2,.8,.3,1) both}
+  .tk{position:relative;display:flex;background:var(--card);border-radius:4px;box-shadow:var(--shadow)}
+  .tk.fresh{animation:rise .35s cubic-bezier(.2,.8,.3,1) both}
   @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .tk::before,.tk::after{content:'';position:absolute;left:72px;width:16px;height:16px;border-radius:50%;
     background:var(--ground);transform:translateX(-50%)}
@@ -164,7 +164,7 @@
     <span class="sync" id="sync"><span class="dot"></span><span id="syncText">Synced</span></span>
   </nav>
 
-  <main id="open" class="list"></main>
+  <main id="open" class="list"><div class="empty" id="boot">Loading the list…</div></main>
   <div id="gotWrap" hidden>
     <div class="section-label">Already sorted</div>
     <div id="got" class="list"></div>
@@ -177,6 +177,7 @@
 const $=s=>document.querySelector(s);
 let state={names:{a:'Me',b:'You'},items:[]};
 let rev=-1, filter='all', who='a', undoItem=null, undoT=null;
+let lastSig=null, seen=new Set();
 
 /* ── server sync ─────────────────────────── */
 function editing(){ const e=document.activeElement; return e && (e.isContentEditable || e.matches('input')); }
@@ -266,11 +267,20 @@ function render(){
   const got=state.items.filter(i=>i.got&&match(i));
   stats(open,got);
 
+  // Rebuild the cards only when something actually changed — otherwise the
+  // optimistic render, the server's reply and the 4s poll each redraw the
+  // same list and everything flickers.
+  const row=i=>[i.id,i.title,i.note,i.price,i.who,i.got,i.url].join('\u0001');
+  const sig=[filter,state.names.a,state.names.b,open.map(row).join('\u0002'),got.map(row).join('\u0002')].join('\u0003');
+  if(sig===lastSig) return;
+  lastSig=sig;
+
   $('#open').innerHTML = open.length ? open.map(card).join('')
     : `<div class="empty"><b>${state.items.length?'Nothing here yet':'Start the list'}</b>
        Paste a link up top — a shop page, an Etsy listing, anything. Or type an idea and add the details later.</div>`;
   $('#got').innerHTML = got.map(card).join('');
   $('#gotWrap').hidden = !got.length;
+  state.items.forEach(i=>seen.add(i.id));
 }
 function stats(open,got){
   const sum=money(open);
@@ -279,7 +289,7 @@ function stats(open,got){
 }
 function card(i){
   const h=host(i.url);
-  return `<article class="tk${i.got?' got':''}" data-id="${i.id}">
+  return `<article class="tk${i.got?' got':''}${seen.has(i.id)?'':' fresh'}" data-id="${i.id}">
     <div class="stub">
       <button class="punch" data-act="got" title="${i.got?'Move back to the list':'Mark as sorted'}"></button>
       <button class="stamp" data-who="${i.who}" data-act="who" title="Switch who it's for">${esc(initials(i.who))}</button>

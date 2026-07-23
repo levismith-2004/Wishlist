@@ -104,10 +104,10 @@ const json = (res, code, obj) => send(res, code, 'application/json', JSON.string
 const LOGIN = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Wishlist</title>
 <link href="https://fonts.googleapis.com/css2?family=Gloock&family=Karla:wght@400;700&display=swap" rel="stylesheet">
 <style>body{background:#E4E7EC;color:#14161A;font-family:Karla,system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0;padding:24px}
-form{background:#FBFBFC;border:1.5px solid #14161A;border-radius:4px;padding:28px;width:100%;max-width:340px;box-shadow:0 8px 24px -18px rgba(0,0,0,.5)}
-h1{font-family:Gloock,Georgia,serif;font-weight:400;font-size:44px;margin:0 0 4px;letter-spacing:-.02em}
-p{margin:0 0 20px;font-size:13px;color:#6C7480;letter-spacing:.06em;text-transform:uppercase}
-input{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1.5px solid #C5CBD4;border-radius:3px;background:#fff;margin-bottom:12px}
+form{background:#FBFBFC;border:1.5px solid #14161A;border-radius:4px;padding:26px;width:100%;max-width:340px;box-shadow:0 8px 24px -18px rgba(0,0,0,.5)}
+h1{font-family:Gloock,Georgia,serif;font-weight:400;font-size:44px;line-height:1;margin:0 0 8px;letter-spacing:-.02em}
+p{margin:0 0 22px;font-size:11px;color:#6C7480;letter-spacing:.18em;text-transform:uppercase}
+input{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1.5px solid #C5CBD4;border-radius:3px;background:#fff;margin:0 0 10px;display:block}
 input:focus{outline:none;border-color:#1F4FD8}
 button{width:100%;font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;background:#14161A;color:#E4E7EC;border:0;border-radius:100px;padding:11px;cursor:pointer}
 .err{color:#D2166B;font-size:13px;margin:-4px 0 12px;text-transform:none;letter-spacing:0}</style>
@@ -139,6 +139,16 @@ http.createServer(async (req, res) => {
     }
 
     if (p === '/api/state') return json(res, 200, state);
+
+    if (p === '/api/export') {
+      const stamp = new Date().toISOString().slice(0, 10);
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Content-Disposition': `attachment; filename="wishlist-backup-${stamp}.json"`,
+        'Cache-Control': 'no-store'
+      });
+      return res.end(JSON.stringify(state, null, 2));
+    }
 
     if (p === '/api/op' && req.method === 'POST') {
       apply(JSON.parse(await body(req)));
