@@ -1,0 +1,359 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wishlist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gloock&family=Karla:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --ground:#E4E7EC; --card:#FBFBFC; --ink:#14161A; --muted:#6C7480; --rule:#C5CBD4;
+    --a:#1F4FD8; --b:#D2166B; --both:#5B3FD1;
+    --shadow:0 1px 0 rgba(20,22,26,.06), 0 8px 24px -18px rgba(20,22,26,.5);
+    --display:'Gloock',Georgia,serif; --body:'Karla',ui-sans-serif,system-ui,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:28px 20px 120px}
+  .wrap{max-width:760px;margin:0 auto}
+
+  .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .name{border:0;background:transparent;font:inherit;color:var(--ink);letter-spacing:.18em;
+    text-transform:uppercase;padding:2px 4px;border-bottom:1px dashed var(--rule);width:6.5em}
+  .name:focus{outline:none;border-bottom-color:var(--ink);background:rgba(255,255,255,.6)}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(54px,13vw,104px);line-height:.86;
+    margin:10px 0 0;letter-spacing:-.02em}
+  .rule{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+    border-bottom:1.5px solid var(--ink);padding-bottom:8px;margin-top:14px}
+  .stats{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:right}
+
+  .add{margin:22px 0 26px}
+  .add-field{display:flex;align-items:center;gap:10px;background:var(--card);border:1.5px solid var(--ink);
+    border-radius:3px;padding:12px 14px;box-shadow:var(--shadow)}
+  .add-field:focus-within{box-shadow:0 0 0 3px rgba(31,79,216,.18),var(--shadow)}
+  #entry{flex:1;border:0;background:transparent;font:inherit;font-size:16px;color:var(--ink);min-width:0}
+  #entry:focus{outline:none}
+  #entry::placeholder{color:var(--muted)}
+  .add-row{display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .lbl{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin-right:2px}
+  .chip{font:inherit;font-size:12px;letter-spacing:.08em;text-transform:uppercase;background:transparent;
+    border:1.5px solid var(--rule);color:var(--muted);border-radius:100px;padding:5px 13px;cursor:pointer;transition:.15s}
+  .chip:hover{border-color:var(--ink);color:var(--ink)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--ground)}
+  .chip[data-who="a"][aria-pressed="true"]{background:var(--a);border-color:var(--a);color:#fff}
+  .chip[data-who="b"][aria-pressed="true"]{background:var(--b);border-color:var(--b);color:#fff}
+  .chip[data-who="both"][aria-pressed="true"]{background:var(--both);border-color:var(--both);color:#fff}
+  #addBtn{margin-left:auto;font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+    background:var(--ink);color:var(--ground);border:0;border-radius:100px;padding:9px 22px;cursor:pointer;transition:.15s}
+  #addBtn:hover{transform:translateY(-1px)}
+
+  .filters{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--rule);
+    padding-top:14px;margin-bottom:18px}
+  .filters button{font:inherit;font-size:11px;letter-spacing:.16em;text-transform:uppercase;background:0;
+    border:0;padding:2px 0;color:var(--muted);cursor:pointer;border-bottom:1.5px solid transparent}
+  .filters button[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--ink)}
+  .sync{margin-left:auto;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:6px}
+  .dot{width:6px;height:6px;border-radius:50%;background:#3AA76D}
+  .sync.off .dot{background:var(--b)}
+
+  .list{display:flex;flex-direction:column;gap:14px}
+  .tk{position:relative;display:flex;background:var(--card);border-radius:4px;box-shadow:var(--shadow);
+    animation:rise .35s cubic-bezier(.2,.8,.3,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .tk::before,.tk::after{content:'';position:absolute;left:72px;width:16px;height:16px;border-radius:50%;
+    background:var(--ground);transform:translateX(-50%)}
+  .tk::before{top:-8px}
+  .tk::after{bottom:-8px}
+  .stub{width:72px;flex:none;border-right:2px dashed var(--rule);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:9px;padding:16px 0}
+  .stamp{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;
+    letter-spacing:.04em;text-transform:uppercase;border:1.5px solid currentColor;transform:rotate(-7deg);
+    opacity:.9;cursor:pointer;background:transparent;font-family:var(--body);padding:0}
+  .stamp[data-who="a"]{color:var(--a)}
+  .stamp[data-who="b"]{color:var(--b)}
+  .stamp[data-who="both"]{color:var(--both);font-size:10px}
+  .punch{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--rule);background:transparent;
+    cursor:pointer;padding:0;transition:.15s}
+  .punch:hover{border-color:var(--ink)}
+  .tk.got .punch{background:var(--ink);border-color:var(--ink)}
+
+  .body{flex:1;min-width:0;padding:15px 16px 15px 18px}
+  .top{display:flex;align-items:flex-start;gap:10px}
+  .fav{width:20px;height:20px;border-radius:3px;flex:none;margin-top:2px;object-fit:cover;background:var(--ground)}
+  .title{font-family:var(--body);font-weight:700;font-size:17px;line-height:1.3;margin:0;flex:1;min-width:0;letter-spacing:-.01em}
+  .price{font-size:15px;font-weight:500;color:var(--muted);white-space:nowrap;min-width:2ch;text-align:right}
+  .title:focus,.price:focus,.note:focus{outline:none;background:rgba(31,79,216,.08);border-radius:2px}
+  .meta{margin-top:5px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .meta a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule)}
+  .meta a:hover{color:var(--ink);border-bottom-color:var(--ink)}
+  .note{margin:8px 0 0;font-size:14.5px;color:#3B4149;white-space:pre-wrap;word-break:break-word}
+  .note:empty::before{content:attr(data-ph);color:var(--muted);font-style:italic}
+  .acts{display:flex;flex-direction:column;gap:4px;padding:12px 12px 0 0}
+  .acts button{background:0;border:0;font:inherit;font-size:15px;line-height:1;color:var(--muted);cursor:pointer;
+    padding:5px;border-radius:3px;opacity:0;transition:.15s}
+  .tk:hover .acts button,.tk:focus-within .acts button{opacity:1}
+  .acts button:hover{color:var(--ink);background:var(--ground)}
+  .tk.got{opacity:.5}
+  .tk.got .title{text-decoration:line-through;text-decoration-thickness:1.5px}
+  .got-mark{position:absolute;right:14px;top:50%;transform:translateY(-50%) rotate(-11deg);font-size:13px;
+    font-weight:700;letter-spacing:.22em;color:var(--ink);border:2px solid var(--ink);border-radius:3px;
+    padding:3px 9px;pointer-events:none;animation:thunk .25s cubic-bezier(.2,1.4,.4,1) both}
+  @keyframes thunk{from{transform:translateY(-50%) rotate(-11deg) scale(1.6);opacity:0}}
+
+  .section-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+    margin:34px 0 14px;display:flex;align-items:center;gap:12px}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--rule)}
+  .empty{border:1.5px dashed var(--rule);border-radius:4px;padding:40px 24px;text-align:center;color:var(--muted)}
+  .empty b{display:block;font-family:var(--display);font-weight:400;font-size:26px;color:var(--ink);margin-bottom:6px}
+
+  #undo{position:fixed;left:50%;bottom:24px;transform:translate(-50%,90px);background:var(--ink);color:var(--ground);
+    border-radius:100px;padding:10px 12px 10px 20px;display:flex;align-items:center;gap:14px;font-size:14px;
+    box-shadow:0 12px 30px -12px rgba(0,0,0,.6);transition:transform .25s cubic-bezier(.2,.8,.3,1);z-index:20}
+  #undo.show{transform:translate(-50%,0)}
+  #undo button{font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;background:var(--ground);
+    color:var(--ink);border:0;border-radius:100px;padding:6px 16px;cursor:pointer}
+
+  :focus-visible{outline:2px solid var(--a);outline-offset:2px}
+  @media (max-width:560px){
+    body{padding:20px 14px 100px}
+    .stub{width:58px}
+    .tk::before,.tk::after{left:58px}
+    .acts button{opacity:1}
+    #addBtn{width:100%;margin-left:0;padding:11px}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">
+      <span>A running list for</span>
+      <input class="name" id="nameA" maxlength="12" aria-label="First name">
+      <span>&amp;</span>
+      <input class="name" id="nameB" maxlength="12" aria-label="Second name">
+    </div>
+    <h1>Wishlist</h1>
+    <div class="rule">
+      <span class="eyebrow">Paste a link, pick who it's for</span>
+      <span class="stats" id="stats"></span>
+    </div>
+  </header>
+
+  <section class="add">
+    <div class="add-field">
+      <span aria-hidden="true" style="color:var(--muted)">↳</span>
+      <input id="entry" placeholder="Paste a link, or just type a thing you want…" autocomplete="off">
+    </div>
+    <div class="add-row">
+      <span class="lbl">For</span>
+      <button class="chip" data-who="a" aria-pressed="true"></button>
+      <button class="chip" data-who="b" aria-pressed="false"></button>
+      <button class="chip" data-who="both" aria-pressed="false">Both</button>
+      <button id="addBtn">Add to list</button>
+    </div>
+  </section>
+
+  <nav class="filters">
+    <button data-f="all" aria-pressed="true">Everything</button>
+    <button data-f="a" aria-pressed="false"></button>
+    <button data-f="b" aria-pressed="false"></button>
+    <span class="sync" id="sync"><span class="dot"></span><span id="syncText">Synced</span></span>
+  </nav>
+
+  <main id="open" class="list"></main>
+  <div id="gotWrap" hidden>
+    <div class="section-label">Already sorted</div>
+    <div id="got" class="list"></div>
+  </div>
+</div>
+
+<div id="undo"><span id="undoText"></span><button id="undoBtn">Undo</button></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let state={names:{a:'Me',b:'You'},items:[]};
+let rev=-1, filter='all', who='a', undoItem=null, undoT=null;
+
+/* ── server sync ─────────────────────────── */
+function editing(){ const e=document.activeElement; return e && (e.isContentEditable || e.matches('input')); }
+function setSync(ok,msg){ $('#sync').classList.toggle('off',!ok); $('#syncText').textContent=msg; }
+
+async function call(path,payload){
+  try{
+    const r=await fetch(path, payload
+      ? {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}
+      : {headers:{'Accept':'application/json'}});
+    if(r.status===401){ location.reload(); return null; }
+    if(!r.ok) throw new Error(r.status);
+    const s=await r.json();
+    setSync(true,'Synced');
+    return s;
+  }catch(e){ setSync(false,'Offline'); return null; }
+}
+function absorb(s){
+  if(!s || s.rev===rev) return;
+  rev=s.rev; state={names:s.names,items:s.items};
+  if(editing()) return;          // don't yank the cursor mid-edit
+  render();
+}
+const pull=()=>call('/api/state').then(absorb);
+const op=o=>call('/api/op',o).then(absorb);
+
+/* ── helpers ─────────────────────────────── */
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function normUrl(t){
+  t=t.trim();
+  if(/^https?:\/\//i.test(t)) return t;
+  if(/^[\w-]+(\.[\w-]+)+(\/|$)/.test(t)) return 'https://'+t;
+  return null;
+}
+function host(u){ try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return ''; } }
+const titleCase=s=>s.replace(/\b\w/g,c=>c.toUpperCase());
+function guessTitle(u){
+  try{
+    const url=new URL(u), segs=url.pathname.split('/').filter(Boolean);
+    for(let i=segs.length-1;i>=0;i--){
+      let s=decodeURIComponent(segs[i]).replace(/\.(html?|php|aspx)$/i,'');
+      if(/^[\d\-_.]+$/.test(s)) continue;
+      if(/^(dp|gp|itm|p|product|products|item|items|listing|shop|en|us|au)$/i.test(s)) continue;
+      s=s.replace(/[-_+]/g,' ').replace(/\b\w*\d{4,}\w*\b/g,'').replace(/\s+/g,' ').trim();
+      if(s.length>2) return titleCase(s).slice(0,70);
+    }
+    return titleCase(host(u).split('.')[0]);
+  }catch(e){ return u.slice(0,60); }
+}
+const initials=id=> id==='both'
+  ? ((state.names.a[0]||'A')+(state.names.b[0]||'B')).toUpperCase()
+  : ((state.names[id]||'?')[0]||'?').toUpperCase();
+function money(items){
+  let t=0,any=false;
+  items.forEach(i=>{const m=String(i.price||'').replace(/[, ]/g,'').match(/\d+(\.\d+)?/); if(m){t+=parseFloat(m[0]);any=true;}});
+  return any? '$'+t.toLocaleString(undefined,{maximumFractionDigits:0}) : null;
+}
+
+/* ── add ─────────────────────────────────── */
+function addFromInput(){
+  const raw=$('#entry').value.trim(); if(!raw) return;
+  const urls=raw.split(/\s+/).map(normUrl).filter(Boolean);
+  if(urls.length>1) urls.forEach(u=>push({url:u,title:guessTitle(u)}));
+  else{ const u=normUrl(raw); push(u?{url:u,title:guessTitle(u)}:{url:'',title:raw}); }
+  $('#entry').value=''; $('#entry').focus();
+}
+function push(o){
+  const item={id:uid(),url:o.url||'',title:o.title||'Untitled',note:'',price:'',who,got:false,ts:Date.now()};
+  state.items.unshift(item); render();          // optimistic
+  op({type:'add',item});
+}
+
+/* ── render ──────────────────────────────── */
+function render(){
+  if(document.activeElement!==$('#nameA')) $('#nameA').value=state.names.a;
+  if(document.activeElement!==$('#nameB')) $('#nameB').value=state.names.b;
+  document.querySelector('.chip[data-who="a"]').textContent=state.names.a;
+  document.querySelector('.chip[data-who="b"]').textContent=state.names.b;
+  document.querySelector('.filters [data-f="a"]').textContent='For '+state.names.a;
+  document.querySelector('.filters [data-f="b"]').textContent='For '+state.names.b;
+  document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.who===who));
+  document.querySelectorAll('.filters button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===filter));
+
+  const match=i=>filter==='all'||i.who===filter||i.who==='both';
+  const open=state.items.filter(i=>!i.got&&match(i));
+  const got=state.items.filter(i=>i.got&&match(i));
+  stats(open,got);
+
+  $('#open').innerHTML = open.length ? open.map(card).join('')
+    : `<div class="empty"><b>${state.items.length?'Nothing here yet':'Start the list'}</b>
+       Paste a link up top — a shop page, an Etsy listing, anything. Or type an idea and add the details later.</div>`;
+  $('#got').innerHTML = got.map(card).join('');
+  $('#gotWrap').hidden = !got.length;
+}
+function stats(open,got){
+  const sum=money(open);
+  $('#stats').textContent=[open.length+(open.length===1?' thing':' things'),sum,got.length?got.length+' sorted':'']
+    .filter(Boolean).join(' · ');
+}
+function card(i){
+  const h=host(i.url);
+  return `<article class="tk${i.got?' got':''}" data-id="${i.id}">
+    <div class="stub">
+      <button class="punch" data-act="got" title="${i.got?'Move back to the list':'Mark as sorted'}"></button>
+      <button class="stamp" data-who="${i.who}" data-act="who" title="Switch who it's for">${esc(initials(i.who))}</button>
+    </div>
+    <div class="body">
+      <div class="top">
+        ${h?`<img class="fav" src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(h)}&sz=64" alt="" onerror="this.remove()">`:''}
+        <h3 class="title" contenteditable="plaintext-only" data-field="title">${esc(i.title)}</h3>
+        <span class="price" contenteditable="plaintext-only" data-field="price">${esc(i.price)||'—'}</span>
+      </div>
+      ${h?`<div class="meta"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(h)} ↗</a></div>`:''}
+      <p class="note" contenteditable="plaintext-only" data-field="note" data-ph="Add a note — size, colour, why…">${esc(i.note)}</p>
+    </div>
+    <div class="acts"><button data-act="del" title="Remove">✕</button></div>
+    ${i.got?'<span class="got-mark">GOT IT</span>':''}
+  </article>`;
+}
+
+/* ── events ──────────────────────────────── */
+$('#addBtn').onclick=addFromInput;
+$('#entry').addEventListener('keydown',e=>{if(e.key==='Enter')addFromInput();});
+document.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{who=c.dataset.who;render();$('#entry').focus();});
+document.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;render();});
+['nameA','nameB'].forEach(id=>{
+  const el=$('#'+id), k=id.slice(4).toLowerCase();
+  el.onchange=()=>{ state.names[k]=el.value.trim()||(k==='a'?'Me':'You'); render(); op({type:'names',names:state.names}); };
+});
+
+document.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-act]'); if(!btn) return;
+  const id=btn.closest('.tk').dataset.id, it=state.items.find(x=>x.id===id); if(!it) return;
+  const act=btn.dataset.act;
+  if(act==='got'){ it.got=!it.got; render(); op({type:'update',id,patch:{got:it.got}}); }
+  if(act==='who'){ it.who={a:'b',b:'both',both:'a'}[it.who]; render(); op({type:'update',id,patch:{who:it.who}}); }
+  if(act==='del'){
+    undoItem={item:{...it},idx:state.items.indexOf(it)};
+    state.items=state.items.filter(x=>x.id!==id); render();
+    op({type:'delete',id});
+    $('#undoText').textContent='Removed “'+it.title.slice(0,28)+'”';
+    $('#undo').classList.add('show');
+    clearTimeout(undoT); undoT=setTimeout(()=>$('#undo').classList.remove('show'),6000);
+  }
+});
+$('#undoBtn').onclick=()=>{
+  if(undoItem){ state.items.splice(undoItem.idx,0,undoItem.item); render(); op({type:'restore',...undoItem}); undoItem=null; }
+  $('#undo').classList.remove('show');
+};
+
+document.addEventListener('focusout',e=>{
+  const f=e.target.closest('[data-field]'); if(!f) return;
+  const it=state.items.find(x=>x.id===f.closest('.tk').dataset.id); if(!it) return;
+  const field=f.dataset.field;
+  let v=f.textContent.trim();
+  if(field==='price'&&v==='—') v='';
+  if(field==='title'&&!v) v='Untitled';
+  if(it[field]===v){ if(field==='price') f.textContent=v||'—'; return; }
+  it[field]=v;
+  if(field==='price') f.textContent=v||'—';
+  if(field==='title') f.textContent=v;
+  stats(state.items.filter(i=>!i.got),state.items.filter(i=>i.got));
+  op({type:'update',id:it.id,patch:{[field]:v}});
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.matches('.title,.price')){e.preventDefault();e.target.blur();}
+  if(e.key==='Escape'&&e.target.isContentEditable) e.target.blur();
+});
+document.addEventListener('paste',e=>{
+  if(e.target.matches('input,textarea')||e.target.isContentEditable) return;
+  const t=(e.clipboardData||window.clipboardData).getData('text'); if(!t) return;
+  e.preventDefault(); $('#entry').value=t.trim(); $('#entry').focus();
+});
+
+/* ── boot + live sync ────────────────────── */
+pull().then(()=>render());
+setInterval(()=>{ if(!document.hidden && !editing()) pull(); }, 4000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) pull(); });
+</script>
