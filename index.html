@@ -265,7 +265,7 @@ async function call(path,payload){
   }catch(e){ setSync(false,'Offline'); return null; }
 }
 function absorb(s){
-  if(!s || s.rev===rev) return;
+  if(!s || !Array.isArray(s.items) || !s.names || s.rev===rev) return;
   rev=s.rev; state={names:s.names,items:s.items};
   if(editing()) return;          // don't yank the cursor mid-edit
   render();
@@ -341,7 +341,7 @@ function render(){
   document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.who===who));
   document.querySelectorAll('.filters button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.f===filter));
 
-  const match=i=>filter==='all'||i.who===filter||i.who==='both';
+  const match=matchFilter;
   const open=state.items.filter(i=>!i.got&&match(i));
   const got=state.items.filter(i=>i.got&&match(i));
   stats(open,got);
@@ -368,6 +368,8 @@ function render(){
     return `<section class="folder${shut?' shut':''}" data-group="${esc(g)}">
       <div class="fhead"><span class="caret" data-act="fold">▼</span>
         <h2 class="fname" contenteditable="plaintext-only" data-gfield="${esc(g)}">${esc(g)}</h2>
+        <button class="mv" data-act="fup" title="Move folder up">▲</button>
+        <button class="mv" data-act="fdown" title="Move folder down">▼</button>
         <button data-act="ungroup" title="Dissolve this folder, keep the items">Ungroup</button>
         <span class="fmeta" data-act="fold">${meta}</span></div>
       <div class="list" data-group="${esc(g)}">${kids.map(card).join('')}</div>
@@ -462,9 +464,10 @@ document.addEventListener('click',e=>{
   const act0=btn.dataset.act;
 
   // Folder header actions live outside any card, so handle them first.
-  if(act0==='fold'||act0==='ungroup'){
+  if(act0==='fold'||act0==='ungroup'||act0==='fup'||act0==='fdown'){
     const g=btn.closest('.folder').dataset.group;
-    if(act0==='ungroup'){
+    if(act0==='fup'||act0==='fdown'){ moveFolder(g,act0); }
+    else if(act0==='ungroup'){
       state.items.forEach(i=>{ if(i.group===g) i.group=''; });
       collapsed.delete(g);
       lastSig=null; render(); op({type:'regroup',from:g,to:''});
@@ -572,6 +575,22 @@ document.addEventListener('focusout',e=>{
   stats(state.items.filter(i=>!i.got),state.items.filter(i=>i.got));
   op({type:'update',id:it.id,patch:{[field]:v}});
 });
+const matchFilter=i=>filter==='all'||i.who===filter||i.who==='both';
+
+// Folders have no stored order of their own — they appear in the order their
+// items do. So moving a folder means moving its whole block of items.
+function moveFolder(g,dir){
+  const open=state.items.filter(i=>!i.got&&matchFilter(i));
+  const names=[]; open.forEach(i=>{ if(i.group && !names.includes(i.group)) names.push(i.group); });
+  const k=names.indexOf(g), j=dir==='fup'?k-1:k+1;
+  if(k<0||j<0||j>=names.length) return;
+  [names[k],names[j]]=[names[j],names[k]];
+  const ids=names.flatMap(n=>open.filter(i=>i.group===n).map(i=>i.id))
+    .concat(open.filter(i=>!i.group).map(i=>i.id));   // loose items stay at the bottom
+  applyOrder(ids); lastSig=null; render();
+  op({type:'reorder',ids:state.items.map(x=>x.id)});
+}
+
 const PALETTE=['#C4552A','#C98A05','#17795E','#0E7490','#6D3FD1','#4A5568'];
 
 // Rearranges the visible items among the slots they already occupy, so a
